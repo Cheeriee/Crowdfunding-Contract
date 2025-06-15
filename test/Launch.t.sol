@@ -17,8 +17,6 @@ contract LaunchTest is Test {
     event Withdrawn(address indexed owner, uint256 indexed amount);
     event ContributorRefunded(address indexed contributor, uint256 indexed amount);
 
-
-
     function setUp() public {
         vm.prank(owner);
         launch = new Launch(duration, goal);

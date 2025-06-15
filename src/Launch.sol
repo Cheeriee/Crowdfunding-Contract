@@ -2,14 +2,14 @@
 pragma solidity ^0.8.26;
 
 
-//A crowdfunding contract in solidity allows people to contribute towards a goal within a set deadline. If the goal is reached, the owner can withdraw the funds. If not, contributors can get refunds.
-contract Launch{
+contract Launch{  //A crowdfunding contract in solidity allows people to contribute towards a goal within a set deadline. If the goal is reached, the owner can withdraw the funds. If not, contributors can get refunds.
+    
     address public immutable owner;
     uint256 public immutable goal;
     uint256 public immutable deadline;
     uint256 public totalContributed;
     bool public goalReached;
-    bool OwnerWithdrawn;
+    bool public ownerWithdrawn;
 
     struct Contributor { //stores amount and refund status per contributor
         uint256 amount;
@@ -50,7 +50,7 @@ contract Launch{
         goal = _goal;
         deadline = block.timestamp + _duration;
         goalReached = false;
-        OwnerWithdrawn = false;
+        ownerWithdrawn = false;
     }
 
     modifier onlyOwner(){ //to restrict access to owner
@@ -67,8 +67,8 @@ contract Launch{
         _;
     }
 
-    //function to contribute funds
-    function contribute() external payable onlyActive {
+    
+    function contribute() external payable onlyActive {  //function to contribute funds
         if(msg.value == 0) {
             revert InsufficientAmount();
         }
@@ -84,19 +84,19 @@ contract Launch{
         emit CampaignStatus(totalContributed, totalContributed >= goal, block.timestamp >= deadline); //emit event showing the goal is now reached and deadline has passed. Emits the current status of the campaign after every contribution
     }
 
-    //function for owner to withdraw funds if the goal is met
-    function withdrawOwner() external onlyOwner {
+    
+    function withdrawOwner() external onlyOwner {  //function for owner to withdraw funds if the goal is met
         if(block.timestamp < deadline) {
             revert CampaignNotEnded();
         }
         if(totalContributed < goal) {
             revert GoalNotReached();
         }
-        if(OwnerWithdrawn) { 
+        if(ownerWithdrawn) { 
             revert AlreadyWithdrawn();
         }
 
-        OwnerWithdrawn = true; //marks that the owner has withdrawn to block future withdrawals. Set this before transferring funds to defensively to prevent re-entrancy attacks. LOck it first
+        ownerWithdrawn = true; //marks that the owner has withdrawn to block future withdrawals. Set this before transferring funds to defensively to prevent re-entrancy attacks. LOck it first
         uint256 amount = address(this).balance;  //gets the entire balance of the contract
 
         (bool success,) = owner.call{value: amount}(""); //sends the ETH to the owner's address using .call{value: ...} which is safer and more flexible than .transfer
@@ -107,8 +107,8 @@ contract Launch{
         emit Withdrawn(owner, amount);
     }
 
-    //function for contributors to withdraw funds if goal is not reached
-    function withdrawContributor() external {
+    function withdrawContributor() external {  //function for contributors to withdraw funds if goal is not reached
+
         if(block.timestamp < deadline) {
             revert DeadlineNotPassed();
         }
@@ -136,8 +136,8 @@ contract Launch{
         emit ContributorRefunded(msg.sender, amount);
 }
 
-    //function to check campaign status
-    function getCampaignStatus() external view returns(
+    
+    function getCampaignStatus() external view returns(  //function to check campaign status
         uint256 currentFunds, 
         uint256 goalAmount, 
         uint256 deadlineTimestamp,
@@ -145,23 +145,14 @@ contract Launch{
         bool isDeadlinePassed,
         bool hasOwnerWithdrawn
         ){
-            return(totalContributed, goal, deadline, totalContributed >= goal, block.timestamp >= deadline, OwnerWithdrawn);
+            return(totalContributed, goal, deadline, totalContributed >= goal, block.timestamp >= deadline, ownerWithdrawn);
         }
 
-    //funtion to get contributor's contribution
-    function getContribution(address _contributor) external view returns(uint256 amount, bool hasWithdrawn) {
+    function getContribution(address _contributor) external view returns(uint256 amount, bool hasWithdrawn) {  //funtion to get contributor's contribution
+
         Contributor memory contributor = contributors[_contributor];
             return (contributor.amount, contributor.hasWithdrawn);
     }
 
-    //receive function to handle direct token transfers
-    receive() external payable {
-        // Accept ETH sent directly to the contract, but do not call contribute() to avoid modifier issues.
-        // Optionally, you can emit an event or handle logic here if needed.
-    }
-
-    //fallback function
-    fallback() external payable {
-        
-    }
+    receive() external payable {}  //Allow contract to receive ETH directly
 }
